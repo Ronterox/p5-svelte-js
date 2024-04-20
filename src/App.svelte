@@ -48,7 +48,6 @@
     {:else}
         <h1>Loading...</h1>
     {/if}
-    <p>Drag your mouse to spawn blocks</p>
 </main>
 
 <style>
