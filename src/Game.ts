@@ -1,6 +1,20 @@
 import { Bodies, Body, Bounds, Composite, Engine, Runner, type IChamferableBodyDefinition } from 'matter-js';
 import P5 from 'p5';
 
+type Position = { x: number, y: number };
+type Size = { w: number, h: number } | { r: number };
+type Color = string;
+type Angle = number;
+
+type BallType = 'solid' | 'striped' | 'black' | 'white';
+type Ball = { position: Position, size: Size, color: Color, stripe: BallType };
+type PlayerStick = { position: Position, size: Size, color: Color, angle: Angle };
+
+type Hole = { position: Position, size: Size, balls: Ball[] };
+type Table = { position: Position, size: Size, color: Color, holes: Hole[] };
+
+type Game = { table: Table, playerSticks: PlayerStick[], balls: Ball[]};
+
 let engine = Engine.create();
 let boxes: Body[] = [];
 let toRemove: number[] = [];
