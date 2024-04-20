@@ -113,7 +113,7 @@ function draw(p: P5, game: Game) {
                 }
                 p.fill('black');
                 p.textSize(size.r - 5);
-                p.text(i, x - size.r * 0.5, y + size.r * 0.25);
+                p.text(i.toLocaleString(undefined, { minimumIntegerDigits: 2 }), x - size.r * 0.5, y + size.r * 0.25);
             }
         }
         else {
@@ -125,18 +125,12 @@ function draw(p: P5, game: Game) {
 let game: Game;
 export default (p: P5) => {
     p.mouseMoved = () => {
-        if (game.state.playerTurn === 0) {
-            const player = game.players[0];
-            player.angle = p.atan2(p.mouseY - game.players[0].sprite.position.y, p.mouseX - game.players[0].sprite.position.x);
-            player.sprite.position.x = p.mouseX;
-            player.sprite.position.y = p.mouseY;
-        }
+        const player = game.players[game.state.playerTurn];
+        player.sprite.position = { x: p.mouseX, y: p.mouseY };
     }
     p.mouseDragged = () => {
-        if (game.state.playerTurn === 0) {
-            const player = game.players[0];
-            player.sprite.position.y = p.mouseY;
-        }
+        const player = game.players[game.state.playerTurn];
+        player.sprite.position.y = p.mouseY;
     }
     p.setup = () => {
         p.createCanvas(800, 640);
