@@ -25,6 +25,42 @@ function Box(x: number, y: number, w: number, h: number, options?: IChamferableB
     return body;
 }
 
+function createBalls(p: P5): Ball[] {
+
+}
+
+function createTable(p: P5): Table {
+
+}
+
+function createPlayers(p: P5, num: number): PlayerStick[] {
+
+}
+
+function startGame(table: Table, balls: Ball[], players: PlayerStick[]): Game {
+
+}
+
+function turnEnded(game: Game): boolean {
+
+}
+
+function winner(game: Game): boolean {
+
+}
+
+function showWinner(p: P5, game: Game) {
+
+}
+
+function nextTurn(game: Game) {
+
+}
+
+function draw(p: P5, game: Game) {
+
+}
+
 let game: Game;
 export default (p: P5) => {
     p.setup = () => {
@@ -32,7 +68,7 @@ export default (p: P5) => {
         let balls = createBalls(p);
         let table = createTable(p);
         let players = createPlayers(p, 2);
-        game = startGame({ table, balls, players });
+        game = startGame(table, balls, players);
         Runner.run(engine);
         p.loop();
     };
@@ -49,3 +85,5 @@ export default (p: P5) => {
         draw(p, game);
     };
 };
+
+
