@@ -1,4 +1,4 @@
-import { Engine, Runner } from 'matter-js';
+import { Bodies, Body, Composite, Engine, Runner } from 'matter-js';
 import P5 from 'p5';
 
 type Size = Area | Radius;
@@ -13,8 +13,8 @@ type Angle = number;
 type Sprite = { position: Position, size: Size, color: Color };
 
 type BallType = 'solid' | 'striped' | 'black' | 'white';
-type Ball = { sprite: Sprite, ballType: BallType };
-type PlayerStick = { sprite: Sprite, angle: Angle };
+type Ball = { sprite: Sprite, body: Body, ballType: BallType };
+type PlayerStick = { sprite: Sprite, body: Body, angle: Angle };
 
 type Hole = { sprite: Sprite, balls: Ball[] };
 type Table = { sprite: Sprite, holes: Hole[] };
@@ -23,7 +23,14 @@ type PlayerId = number;
 type GameState = { whiteBall: Ball, playerTurn: PlayerId };
 type Game = { table: Table, players: PlayerStick[], balls: Ball[], state: GameState };
 
-const engine = Engine.create();
+const engine = Engine.create({ gravity: { y: 0 } });
+
+function createBody({ x, y }: Position, size: Size): Body {
+    const { w, h, r } = size as Area & Radius;
+    const body = r ? Bodies.circle(x, y, r) : Bodies.rectangle(x, y, w, h);
+    Composite.add(engine.world, body);
+    return body;
+}
 
 function createBalls({ width, height }: P5): Ball[] {
     const balls: Ball[] = [];
@@ -31,11 +38,15 @@ function createBalls({ width, height }: P5): Ball[] {
     let line = 5, color_i = 0;
     while (line > 0) {
         const r = 20;
+        const size = { r };
         const x = width * 0.5 + (1 - line) * r;
         const y = height * 0.5 - line * r * 2;
         for (let i = 0; i < line; i++) {
             const ballType = i % 2 === 0 ? 'solid' : 'striped';
-            balls.push({ sprite: { position: { x: x + i * r * 2, y }, size: { r }, color: colors[color_i] }, ballType });
+            const position = { x: x + i * r * 2, y };
+            const color = colors[color_i];
+            const body = createBody(position, size);
+            balls.push({ sprite: { position, size, color }, body, ballType });
             color_i = (color_i + 1) % colors.length;
         }
         line--;
@@ -45,16 +56,20 @@ function createBalls({ width, height }: P5): Ball[] {
     return balls;
 }
 
-function createTable(p: P5): Table {
+function createTable({ width, height }: P5): Table {
     const size: Radius = { r: 25 };
     const color: Color = 'black';
+    const posr = size.r * 1.5;
+    const hole = (x: number, y: number) => ({ sprite: { position: { x, y }, size, color }, balls: [] });
     return {
-        sprite: { position: { x: p.width * 0.5, y: p.height * 0.5 }, size: { w: p.width * 0.9, h: p.height * 0.8 }, color: 'green' },
+        sprite: { position: { x: width * 0.5, y: height * 0.5 }, size: { w: width * 0.9, h: height * 0.8 }, color: 'green' },
         holes: [
-            { sprite: { position: { x: size.r, y: size.r * 1.5 }, size, color }, balls: [] },
-            { sprite: { position: { x: p.width - size.r, y: size.r * 1.5 }, size, color }, balls: [] },
-            { sprite: { position: { x: size.r, y: p.height - size.r * 1.5 }, size, color }, balls: [] },
-            { sprite: { position: { x: p.width - size.r * 1.5, y: p.height - size.r * 1.5 }, size, color }, balls: [] }
+            hole(size.r, posr),
+            hole(width - size.r, posr),
+            hole(size.r, height - posr),
+            hole(width - posr, height - posr),
+            hole(width * 0.5, posr),
+            hole(width * 0.5, height - posr)
         ]
     }
 }
@@ -62,7 +77,15 @@ function createTable(p: P5): Table {
 function createPlayers(p: P5, num: number): PlayerStick[] {
     let players: PlayerStick[] = [];
     for (let i = 0; i < num; i++) {
-        players.push({ sprite: { position: { x: p.width * 0.15 + i * p.width * 0.15, y: p.height * 0.5 }, size: { w: 10, h: p.width * 0.5 }, color: 'brown' }, angle: 0 });
+        players.push({
+            sprite: {
+                position: { x: p.width * 0.15 + i * p.width * 0.15, y: p.height * 0.5 },
+                size: { w: 10, h: p.width * 0.5 },
+                color: 'brown'
+            },
+            body: createBody({ x: p.width * 0.15 + i * p.width * 0.15, y: p.height * 0.5 }, { w: 10, h: p.width * 0.5 }),
+            angle: 0
+        });
     }
     return players;
 }
@@ -76,6 +99,7 @@ function startGame(table: Table, balls: Ball[], players: PlayerStick[]): Game {
             playerTurn: 0,
             whiteBall: {
                 sprite: { position: { x, y: y + y * 0.5 }, color: 'white', size },
+                body: createBody({ x, y: y + y * 0.5 }, size),
                 ballType: 'white'
             }
         }
@@ -103,6 +127,10 @@ function draw(p: P5, game: Game) {
     for (let i = 0; i < objects.length; i++) {
         const { position: { x, y }, size, color } = objects[i].sprite;
         p.fill(color);
+        if ('body' in objects[i]) {
+            const object = objects[i] as Ball | PlayerStick;
+            object.sprite.position = object.body.position;
+        }
         if ('r' in size) {
             p.ellipse(x, y, size.r * 2);
             if ('ballType' in objects[i]) {
@@ -126,11 +154,16 @@ let game: Game;
 export default (p: P5) => {
     p.mouseMoved = () => {
         const player = game.players[game.state.playerTurn];
-        player.sprite.position = { x: p.mouseX, y: p.mouseY };
+        // player.sprite.position = { x: p.mouseX, y: p.mouseY };
+        const { x, y } = player.sprite.position;
+        const { x: mx, y: my } = { x: p.mouseX, y: p.mouseY };
+        Body.setPosition(player.body, { x: x + (mx - x) * 0.1, y: y + (my - y) * 0.1 });
     }
     p.mouseDragged = () => {
         const player = game.players[game.state.playerTurn];
-        player.sprite.position.y = p.mouseY;
+        const { x, y } = player.sprite.position;
+        const { y: my } = { y: p.mouseY };
+        Body.setPosition(player.body, { x, y: y + (my - y) * 0.1 });
     }
     p.setup = () => {
         p.createCanvas(800, 640);
