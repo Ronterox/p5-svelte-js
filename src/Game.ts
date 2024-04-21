@@ -35,10 +35,11 @@ function createBody({ x, y }: Position, size: Size): Body {
 function createBalls({ width, height }: P5): Ball[] {
     const balls: Ball[] = [];
     const colors: Color[] = ['yellow', 'blue', 'red', 'purple', 'orange', 'green', 'brown'];
+    const r = 20;
+    const size = { r };
+
     let line = 5, color_i = 0;
     while (line > 0) {
-        const r = 20;
-        const size = { r };
         const x = width * 0.5 + (1 - line) * r;
         const y = height * 0.5 - line * r * 2;
         for (let i = 0; i < line; i++) {
@@ -77,13 +78,15 @@ function createTable({ width, height }: P5): Table {
 function createPlayers(p: P5, num: number): PlayerStick[] {
     let players: PlayerStick[] = [];
     for (let i = 0; i < num; i++) {
+        const position = { x: p.width * 0.15 + i * p.width * 0.15, y: p.height * 0.5 };
+        const size = { w: 10, h: p.width * 0.5 };
         players.push({
             sprite: {
-                position: { x: p.width * 0.15 + i * p.width * 0.15, y: p.height * 0.5 },
-                size: { w: 10, h: p.width * 0.5 },
+                position,
+                size,
                 color: 'brown'
             },
-            body: createBody({ x: p.width * 0.15 + i * p.width * 0.15, y: p.height * 0.5 }, { w: 10, h: p.width * 0.5 }),
+            body: createBody(position, size),
             angle: 0
         });
     }
@@ -93,13 +96,14 @@ function createPlayers(p: P5, num: number): PlayerStick[] {
 function startGame(table: Table, balls: Ball[], players: PlayerStick[]): Game {
     Runner.run(engine);
     const { position: { x, y }, size } = balls[balls.length - 1].sprite;
+    const pos = { x, y: y + y * 0.5 };
     return {
         table, balls, players,
         state: {
             playerTurn: 0,
             whiteBall: {
-                sprite: { position: { x, y: y + y * 0.5 }, color: 'white', size },
-                body: createBody({ x, y: y + y * 0.5 }, size),
+                sprite: { position: pos, color: 'white', size },
+                body: createBody(pos, size),
                 ballType: 'white'
             }
         }
@@ -186,5 +190,4 @@ export default (p: P5) => {
         draw(p, game);
     };
 };
-
 
